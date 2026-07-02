@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Spring AI 도구모음</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1A1D24;
+    --panel:#20242C;
+    --card:#262B34;
+    --border:#333947;
+    --border-strong:#454C5C;
+    --text:#ECEDF0;
+    --text-dim:#9BA1AE;
+    --text-faint:#666D7C;
+    --amber:#E8A33D;
+    --amber-dim:#3A2F1C;
+    --teal:#4FA79A;
+    --teal-dim:#1B2E2B;
+    --red:#D9695A;
+    --radius:10px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+  }
+  .app{
+    display:grid;
+    grid-template-columns:260px 1fr;
+    min-height:100vh;
+  }
+
+  /* Sidebar */
+  .sidebar{
+    background:var(--panel);
+    border-right:1px solid var(--border);
+    padding:28px 20px;
+    display:flex;
+    flex-direction:column;
+    gap:28px;
+  }
+  .brand{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:19px;
+    letter-spacing:-0.01em;
+  }
+  .cursor{
+    display:inline-block;
+    color:var(--amber);
+    animation:blink 1.1s step-end infinite;
+    margin-left:2px;
+  }
+  @keyframes blink{50%{opacity:0;}}
+  .brand-sub{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-faint);
+    margin-top:4px;
+    letter-spacing:0.02em;
+  }
+  nav{display:flex;flex-direction:column;gap:4px;}
+  .nav-item{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    width:100%;
+    text-align:left;
+    background:transparent;
+    border:1px solid transparent;
+    border-radius:var(--radius);
+    padding:10px 12px;
+    color:var(--text-dim);
+    font-family:'Inter',sans-serif;
+    font-size:13.5px;
+    cursor:pointer;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .nav-item:hover{
+    background:var(--card);
+    color:var(--text);
+  }
+  .nav-item.active{
+    background:var(--amber-dim);
+    border-color:#4A3A22;
+    color:var(--amber);
+  }
+  .nav-prompt{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--text-faint);
+    flex-shrink:0;
+  }
+  .nav-item.active .nav-prompt{color:var(--amber);}
+
+  .sidebar-footer{
+    margin-top:auto;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .sidebar-footer label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:10.5px;
+    color:var(--text-faint);
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+  }
+  .sidebar-footer input{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:8px 10px;
+    color:var(--text);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    outline:none;
+  }
+  .sidebar-footer input:focus{border-color:var(--border-strong);}
+  .sidebar-footer .hint{
+    font-size:10.5px;
+    color:var(--text-faint);
+    line-height:1.5;
+  }
+
+  /* Main panel */
+  .panel{
+    padding:40px 48px;
+    max-width:760px;
+    display:flex;
+    flex-direction:column;
+    gap:24px;
+  }
+  header h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:24px;
+    letter-spacing:-0.01em;
+  }
+  header p{
+    color:var(--text-dim);
+    font-size:14px;
+    margin-top:6px;
+    line-height:1.6;
+  }
+
+  .input-area{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  textarea, input.field-input{
+    width:100%;
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:12px 14px;
+    color:var(--text);
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    line-height:1.6;
+    resize:vertical;
+    outline:none;
+  }
+  textarea:focus, input.field-input:focus{border-color:var(--amber);}
+  textarea::placeholder, input.field-input::placeholder{color:var(--text-faint);}
+
+  .input-row{display:flex;gap:10px;align-items:center;justify-content:space-between;}
+  .kbd-hint{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--text-faint);
+  }
+  .kbd{
+    display:inline-block;
+    border:1px solid var(--border-strong);
+    border-radius:4px;
+    padding:1px 6px;
+    font-size:10.5px;
+    color:var(--text-dim);
+  }
+  button#runBtn{
+    background:var(--amber);
+    border:none;
+    border-radius:8px;
+    padding:9px 18px;
+    color:#2A1E08;
+    font-family:'Inter',sans-serif;
+    font-weight:500;
+    font-size:13.5px;
+    cursor:pointer;
+    transition:filter .15s, transform .1s;
+  }
+  button#runBtn:hover{filter:brightness(1.08);}
+  button#runBtn:active{transform:scale(0.97);}
+  button#runBtn:disabled{opacity:0.5;cursor:not-allowed;}
+
+  /* Output console */
+  .output-area{
+    background:#16181D;
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    overflow:hidden;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-height:280px;
+  }
+  .output-header{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:10px 14px;
+    border-bottom:1px solid var(--border);
+    background:var(--panel);
+  }
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--border-strong);}
+  .dot:nth-child(1){background:#E06C5C;}
+  .dot:nth-child(2){background:#E8B84D;}
+  .dot:nth-child(3){background:#4FA76B;}
+  .output-path{
+    margin-left:8px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11.5px;
+    color:var(--text-faint);
+  }
+  #output{
+    flex:1;
+    padding:16px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    line-height:1.7;
+    color:var(--text-dim);
+    white-space:pre-wrap;
+    word-break:break-word;
+    overflow-y:auto;
+  }
+  #output.ready{color:var(--text);}
+  #output.error{color:var(--red);}
+  .prompt-line{color:var(--teal);}
+
+  @media (max-width:720px){
+    .app{grid-template-columns:1fr;}
+    .sidebar{flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1px solid var(--border);}
+    .sidebar-footer{width:100%;}
+    .panel{padding:28px 20px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div>
+      <div class="brand">Spring AI<span class="cursor">▊</span></div>
+      <div class="brand-sub">DAY 01 · MINI TOOLS</div>
+    </div>
+
+    <nav id="nav"></nav>
+
+    <div class="sidebar-footer">
+      <label for="baseUrl">Base URL</label>
+      <input id="baseUrl" class="field-input" placeholder="비워두면 현재 주소 사용">
+      <div class="hint">같은 Spring Boot 앱에서 열었다면 비워두세요.</div>
+    </div>
+  </aside>
+
+  <main class="panel">
+    <header>
+      <h1 id="toolTitle"></h1>
+      <p id="toolDesc"></p>
+    </header>
+
+    <div class="input-area">
+      <div id="inputWrap"></div>
+      <div class="input-row">
+        <span class="kbd-hint"><span class="kbd">Ctrl</span> + <span class="kbd">Enter</span> 로 실행</span>
+        <button id="runBtn">실행 →</button>
+      </div>
+    </div>
+
+    <div class="output-area">
+      <div class="output-header">
+        <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+        <span class="output-path" id="outputPath"></span>
+      </div>
+      <pre id="output">$ 응답 대기 중...</pre>
+    </div>
+  </main>
+
+</div>
+
+<script>
+  const TOOLS = [
+    {
+      id: 'code',
+      label: '코드 설명 도우미',
+      endpoint: '/api/code-explain',
+      param: 'code',
+      title: '코드 설명 도우미',
+      desc: '코드 스니펫을 붙여넣으면 단계별로 설명해줘요.',
+      placeholder: '설명이 필요한 코드를 붙여넣으세요...',
+      multiline: true
+    },
+    {
+      id: 'readme',
+      label: 'README 생성 도우미',
+      endpoint: '/api/readme',
+      param: 'description',
+      title: 'README 생성 도우미',
+      desc: '프로젝트 설명을 입력하면 README.md 초안을 만들어줘요.',
+      placeholder: '예: Spring Boot로 만든 할일 관리 REST API. JWT 인증 포함.',
+      multiline: true
+    },
+    {
+      id: 'interview',
+      label: '면접 질문 생성기',
+      endpoint: '/api/interview',
+      param: 'techStack',
+      title: '면접 질문 생성기',
+      desc: '기술 스택을 입력하면 난이도별 예상 면접 질문을 만들어줘요.',
+      placeholder: '예: Spring Boot, JPA, MySQL',
+      multiline: false
+    },
+    {
+      id: 'faq',
+      label: '기업 FAQ 응답기',
+      endpoint: '/api/faq',
+      param: 'question',
+      title: '기업 FAQ 응답기',
+      desc: '자주 묻는 질문을 입력하면 답변 초안을 만들어줘요.',
+      placeholder: '예: 환불은 얼마나 걸리나요?',
+      multiline: true
+    }
+  ];
+
+  let current = TOOLS[0];
+
+  const navEl = document.getElementById('nav');
+  const titleEl = document.getElementById('toolTitle');
+  const descEl = document.getElementById('toolDesc');
+  const inputWrap = document.getElementById('inputWrap');
+  const outputEl = document.getElementById('output');
+  const outputPathEl = document.getElementById('outputPath');
+  const runBtn = document.getElementById('runBtn');
+  const baseUrlEl = document.getElementById('baseUrl');
+
+  function renderNav() {
+    navEl.innerHTML = '';
+    TOOLS.forEach(tool => {
+      const btn = document.createElement('button');
+      btn.className = 'nav-item' + (tool.id === current.id ? ' active' : '');
+      btn.innerHTML = '<span class="nav-prompt">$</span><span class="nav-label">' + tool.label + '</span>';
+      btn.addEventListener('click', () => selectTool(tool));
+      navEl.appendChild(btn);
+    });
+  }
+
+  function renderInput() {
+    inputWrap.innerHTML = '';
+    let el;
+    if (current.multiline) {
+      el = document.createElement('textarea');
+      el.rows = 6;
+    } else {
+      el = document.createElement('input');
+      el.type = 'text';
+      el.className = 'field-input';
+    }
+    el.id = 'inputField';
+    el.placeholder = current.placeholder;
+    el.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        runTool();
+      }
+    });
+    inputWrap.appendChild(el);
+    el.focus();
+  }
+
+  function selectTool(tool) {
+    current = tool;
+    titleEl.textContent = tool.title;
+    descEl.textContent = tool.desc;
+    outputPathEl.textContent = 'GET ' + tool.endpoint;
+    outputEl.textContent = '$ 응답 대기 중...';
+    outputEl.className = '';
+    renderNav();
+    renderInput();
+  }
+
+  async function runTool() {
+    const field = document.getElementById('inputField');
+    const value = field.value.trim();
+    if (!value) {
+      outputEl.textContent = '$ 입력값이 비어 있어요. 내용을 입력한 후 다시 실행하세요.';
+      outputEl.className = 'error';
+      return;
+    }
+
+    const base = baseUrlEl.value.trim().replace(/\/$/, '');
+    const url = base + current.endpoint + '?' + current.param + '=' + encodeURIComponent(value);
+
+    runBtn.disabled = true;
+    outputEl.className = '';
+    outputEl.textContent = '$ 요청 중...\n> ' + url;
+
+    try {
+      const res = await fetch(url);
+      const text = await res.text();
+      if (!res.ok) {
+        outputEl.className = 'error';
+        outputEl.textContent = '$ 오류 (HTTP ' + res.status + ')\n\n' + text;
+      } else {
+        outputEl.className = 'ready';
+        outputEl.textContent = text;
+      }
+    } catch (err) {
+      outputEl.className = 'error';
+      outputEl.textContent = '$ 요청 실패: ' + err.message + '\n\n서버가 켜져 있는지, Base URL이 맞는지 확인하세요.';
+    } finally {
+      runBtn.disabled = false;
+    }
+  }
+
+  runBtn.addEventListener('click', runTool);
+
+  renderNav();
+  selectTool(TOOLS[0]);
+</script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+package com.study.day01_chat_client;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.GetMapping;
+
+@Controller
+public class ChatViewController {
+
+    @GetMapping("/chat")
+    public String chatView() {
+        return "chat";  // 템플릿 작성
+    }
+}
