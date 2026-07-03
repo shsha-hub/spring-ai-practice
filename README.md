@@ -27,7 +27,6 @@ src/main/java/com/study/day01_chat_client/
 ├── Day01ChatClientApplication.java   # 메인 애플리케이션
 ├── ChatController.java               # REST API 컨트롤러
 ├── ChatViewController.java           # 화면(HTML) 컨트롤러
-├── ChatModelService.java             # ChatModel 사용 예시
 └── ChatService.java                  # ChatClient 비즈니스 로직
 
 src/main/resources/
@@ -97,11 +96,11 @@ src/main/resources/
 
 ### 1. 코드 설명 도우미
 
-(여기에 스크린샷 삽입)
+![코드 설명 도우미 응답 예시](docs/images/code-explain.png)
 
 ### 2. README 생성 도우미
 
-(여기에 스크린샷 삽입)
+![README 생성 도우미 응답 예시](docs/images/readme-explain.png)
 
 ## 막혔을 때 체크리스트
 
