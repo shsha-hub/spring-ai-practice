@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>여행 준비물 · 일정 추천기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#16324F;
+    --navy-soft:#274B73;
+    --sand:#EFEEE6;
+    --sand-card:#FFFFFF;
+    --mustard:#E3A23C;
+    --mustard-deep:#B87A1F;
+    --teal:#3E7C7B;
+    --line:#D8D5C8;
+    --ink:#16324F;
+    --ink-soft:#5B6B7A;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--sand);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.6;
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:880px;
+    margin:0 auto;
+    padding:56px 24px 80px;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:24px;
+    margin-bottom:40px;
+    border-bottom:2px solid var(--navy);
+    padding-bottom:24px;
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:14px;}
+  .stamp{
+    width:52px;height:52px;border-radius:50%;
+    border:2px solid var(--mustard-deep);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;font-size:11px;letter-spacing:0.02em;
+    color:var(--mustard-deep);
+    transform:rotate(-8deg);
+    flex-shrink:0;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:28px;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .tagline{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-top:4px;
+  }
+  .eyebrow{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--teal);
+    text-align:right;
+  }
+
+  /* ---------- Form card ---------- */
+  .panel{
+    background:var(--sand-card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:28px;
+    margin-bottom:32px;
+  }
+  .field-row{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:16px;
+    margin-bottom:20px;
+  }
+  label{
+    display:block;
+    font-size:12px;
+    font-weight:600;
+    color:var(--ink-soft);
+    margin-bottom:6px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+  }
+  input[type=text],input[type=number]{
+    width:100%;
+    padding:11px 12px;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    font-family:'Inter',sans-serif;
+    font-size:15px;
+    color:var(--ink);
+    background:#fff;
+    transition:border-color .15s ease;
+  }
+  input:focus{
+    outline:none;
+    border-color:var(--navy-soft);
+  }
+
+  .tabs{
+    display:flex;
+    gap:8px;
+    margin-bottom:22px;
+    flex-wrap:wrap;
+  }
+  .tab{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:13.5px;
+    padding:9px 16px;
+    border-radius:999px;
+    border:1.5px solid var(--line);
+    background:#fff;
+    color:var(--ink-soft);
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .tab:hover{border-color:var(--navy-soft);}
+  .tab.active{
+    background:var(--navy);
+    border-color:var(--navy);
+    color:#fff;
+  }
+
+  .submit-row{display:flex;align-items:center;gap:14px;}
+  button.go{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    padding:12px 26px;
+    background:var(--mustard);
+    color:var(--navy);
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    transition:transform .1s ease, background .15s ease;
+  }
+  button.go:hover{background:var(--mustard-deep);color:#fff;}
+  button.go:active{transform:scale(0.98);}
+  button.go:disabled{opacity:0.5;cursor:not-allowed;}
+
+  .advanced{
+    margin-top:18px;
+    padding-top:16px;
+    border-top:1px dashed var(--line);
+  }
+  .advanced summary{
+    cursor:pointer;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    font-family:'IBM Plex Mono',monospace;
+  }
+  .advanced .field-row{margin-top:14px;margin-bottom:0;grid-template-columns:1fr;}
+
+  .status{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    color:var(--ink-soft);
+  }
+  .status.error{color:#B3432D;}
+
+  /* ---------- Results ---------- */
+  .results{display:flex;flex-direction:column;gap:28px;}
+  .section-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    color:var(--navy);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:14px;
+  }
+  .section-title::after{
+    content:"";
+    flex:1;
+    height:1px;
+    background:var(--line);
+  }
+
+  /* Packing checklist */
+  .packing-list{
+    background:var(--sand-card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:8px;
+  }
+  .packing-item{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:11px 14px;
+    border-bottom:1px solid var(--line);
+    font-size:14.5px;
+  }
+  .packing-item:last-child{border-bottom:none;}
+  .check{
+    width:18px;height:18px;
+    border-radius:5px;
+    border:1.5px solid var(--teal);
+    flex-shrink:0;
+  }
+
+  /* Boarding-pass itinerary cards */
+  .itinerary{
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+  }
+  .pass{
+    display:grid;
+    grid-template-columns:100px 1fr;
+    background:var(--sand-card);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+  }
+  .pass-stub{
+    background:var(--navy);
+    color:#fff;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:14px 8px;
+    position:relative;
+  }
+  .pass-stub::after{
+    content:"";
+    position:absolute;
+    right:-1px;top:0;bottom:0;
+    width:0;
+    border-right:2px dashed rgba(255,255,255,0.35);
+  }
+  .pass-stub .label{
+    font-family:'IBM Plex Mono',monospace;
+    font-size:10px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    opacity:0.7;
+    margin-bottom:4px;
+  }
+  .pass-stub .num{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:26px;
+  }
+  .pass-body{
+    padding:16px 20px;
+  }
+  .pass-body ul{
+    margin:0;
+    padding-left:18px;
+  }
+  .pass-body li{
+    font-size:14.5px;
+    margin-bottom:6px;
+  }
+  .pass-body li:last-child{margin-bottom:0;}
+
+  /* Budget price tag */
+  .budget-card{
+    display:flex;
+    align-items:center;
+    gap:20px;
+    background:var(--navy);
+    border-radius:var(--radius);
+    padding:20px 24px;
+    color:#fff;
+  }
+  .budget-amount{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:26px;
+    white-space:nowrap;
+  }
+  .budget-amount .won{
+    font-size:14px;
+    font-weight:500;
+    opacity:0.7;
+    margin-left:4px;
+  }
+  .budget-note{
+    font-size:13px;
+    color:rgba(255,255,255,0.75);
+    border-left:1px dashed rgba(255,255,255,0.3);
+    padding-left:18px;
+  }
+  @media(max-width:560px){
+    .budget-card{flex-direction:column;align-items:flex-start;gap:8px;}
+    .budget-note{border-left:none;padding-left:0;}
+  }
+
+  .empty{
+    text-align:center;
+    padding:48px 20px;
+    color:var(--ink-soft);
+    font-size:14px;
+  }
+  .empty .icon{font-size:28px;margin-bottom:10px;}
+
+  footer{
+    margin-top:56px;
+    padding-top:20px;
+    border-top:1px solid var(--line);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    display:flex;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:8px;
+  }
+
+  @media(max-width:560px){
+    .field-row{grid-template-columns:1fr;}
+    header{flex-direction:column;align-items:flex-start;}
+    .eyebrow{text-align:left;}
+    .pass{grid-template-columns:76px 1fr;}
+    .pass-stub .num{font-size:20px;}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">
+      <div class="stamp">GO</div>
+      <div>
+        <h1>여행 준비물 · 일정 추천기</h1>
+        <div class="tagline">목적지와 기간만 넣으면 AI가 짐과 일정을 짜드립니다</div>
+      </div>
+    </div>
+    <div class="eyebrow">Spring AI · Day 2<br>Structured Output</div>
+  </header>
+
+  <div class="panel">
+    <div class="field-row">
+      <div>
+        <label for="destination">목적지</label>
+        <input type="text" id="destination" placeholder="예: 제주도" value="제주도">
+      </div>
+      <div>
+        <label for="days">여행 기간(일)</label>
+        <input type="number" id="days" min="1" max="14" value="2">
+      </div>
+    </div>
+
+    <label>받아올 정보</label>
+    <div class="tabs">
+      <button type="button" class="tab active" data-mode="full">준비물 + 일정</button>
+      <button type="button" class="tab" data-mode="packing">준비물만</button>
+      <button type="button" class="tab" data-mode="itinerary">일정만</button>
+    </div>
+
+    <div class="submit-row">
+      <button class="go" id="submitBtn">추천 받기</button>
+      <span class="status" id="statusText"></span>
+    </div>
+
+    <details class="advanced">
+      <summary>API 서버 주소 설정</summary>
+      <div class="field-row">
+        <div>
+          <label for="baseUrl">Base URL</label>
+          <input type="text" id="baseUrl" value="">
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <div class="results" id="results">
+    <div class="empty">
+      <div class="icon">🧳</div>
+      목적지와 기간을 입력하고 [추천 받기]를 눌러보세요
+    </div>
+  </div>
+
+  <footer>
+    <span>GET /api/travel · /api/travel/packing · /api/travel/itinerary</span>
+    <span>Spring AI ChatClient.entity()</span>
+  </footer>
+</div>
+
+<script>
+  const destinationEl = document.getElementById('destination');
+  const daysEl = document.getElementById('days');
+  const baseUrlEl = document.getElementById('baseUrl');
+  const submitBtn = document.getElementById('submitBtn');
+  const statusText = document.getElementById('statusText');
+  const resultsEl = document.getElementById('results');
+  const tabs = document.querySelectorAll('.tab');
+
+  // 같은 오리진(Spring Boot static 리소스)에서 서빙될 경우 baseUrl은 비워둠
+  baseUrlEl.value = window.location.origin.startsWith('http') && window.location.protocol !== 'file:'
+    ? ''
+    : 'http://localhost:8080';
+  baseUrlEl.placeholder = 'http://localhost:8080 (비워두면 현재 페이지 주소 사용)';
+
+  let mode = 'full';
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      mode = tab.dataset.mode;
+    });
+  });
+
+  function apiBase(){
+    const v = baseUrlEl.value.trim();
+    return v ? v.replace(/\/$/, '') : '';
+  }
+
+  function setStatus(text, isError){
+    statusText.textContent = text;
+    statusText.classList.toggle('error', !!isError);
+  }
+
+  function renderEmpty(message, icon){
+    resultsEl.innerHTML = `
+      <div class="empty">
+        <div class="icon">${icon || '🧳'}</div>
+        ${message}
+      </div>`;
+  }
+
+  function renderBudget(amountKrw, note){
+    const formatted = Number(amountKrw).toLocaleString('ko-KR');
+    return `
+      <div>
+        <div class="section-title">예상 경비</div>
+        <div class="budget-card">
+          <div class="budget-amount">${formatted}<span class="won">원 · 1인</span></div>
+          <div class="budget-note">${escapeHtml(note || '')}</div>
+        </div>
+      </div>`;
+  }
+
+  function renderPacking(items){
+    const rows = items.map(item => `
+      <div class="packing-item">
+        <span class="check"></span>
+        <span>${escapeHtml(item)}</span>
+      </div>`).join('');
+    return `
+      <div>
+        <div class="section-title">준비물</div>
+        <div class="packing-list">${rows}</div>
+      </div>`;
+  }
+
+  function renderItinerary(days){
+    const cards = days.map(d => `
+      <div class="pass">
+        <div class="pass-stub">
+          <div class="label">Day</div>
+          <div class="num">${d.day}</div>
+        </div>
+        <div class="pass-body">
+          <ul>
+            ${d.activities.map(a => `<li>${escapeHtml(a)}</li>`).join('')}
+          </ul>
+        </div>
+      </div>`).join('');
+    return `
+      <div>
+        <div class="section-title">일정</div>
+        <div class="itinerary">${cards}</div>
+      </div>`;
+  }
+
+  function escapeHtml(str){
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  async function fetchJson(url){
+    const res = await fetch(url);
+    if(!res.ok){
+      throw new Error(`서버 응답 오류 (status ${res.status})`);
+    }
+    return res.json();
+  }
+
+  async function handleSubmit(){
+    const destination = destinationEl.value.trim();
+    const days = parseInt(daysEl.value, 10);
+
+    if(!destination){
+      setStatus('목적지를 입력해주세요', true);
+      return;
+    }
+    if(!days || days < 1){
+      setStatus('여행 기간을 1일 이상 입력해주세요', true);
+      return;
+    }
+
+    submitBtn.disabled = true;
+    setStatus('AI가 계획을 짜는 중입니다...');
+    renderEmpty('불러오는 중입니다', '⏳');
+
+    const base = apiBase();
+    const params = `destination=${encodeURIComponent(destination)}&days=${days}`;
+
+    try{
+      if(mode === 'packing'){
+        const items = await fetchJson(`${base}/api/travel/packing?${params}`);
+        resultsEl.innerHTML = renderPacking(items);
+      } else if(mode === 'itinerary'){
+        const itinerary = await fetchJson(`${base}/api/travel/itinerary?${params}`);
+        resultsEl.innerHTML = renderItinerary(itinerary);
+      } else {
+        const plan = await fetchJson(`${base}/api/travel?${params}`);
+        resultsEl.innerHTML =
+          renderBudget(plan.estimatedBudgetKrw, plan.budgetNote) +
+          renderPacking(plan.packingList) +
+          renderItinerary(plan.itinerary);
+      }
+      setStatus('완료');
+    }catch(err){
+      renderEmpty('요청에 실패했습니다. 서버 주소와 CORS 설정을 확인해주세요.', '⚠️');
+      setStatus(err.message || '요청 실패', true);
+    }finally{
+      submitBtn.disabled = false;
+    }
+  }
+
+  submitBtn.addEventListener('click', handleSubmit);
+  [destinationEl, daysEl].forEach(el => {
+    el.addEventListener('keydown', e => {
+      if(e.key === 'Enter') handleSubmit();
+    });
+  });
+</script>
+</body>
+</html>
