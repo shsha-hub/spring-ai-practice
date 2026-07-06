@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: day03-advisor-memory
+  ai:
+    google:
+      genai:
+        chat:
+          model: gemini-3.1-flash-lite
+        api-key: ${GOOGLE_API_KEY}
+    chat:
+      memory:
+        repository:
+          jdbc:
+            initialize-schema: always
+  datasource:
+    url: jdbc:h2:file:./data/chatmemory
+    driver-class-name: org.h2.Driver
+  h2:
+    console:
+      enabled: true
+
+logging:
+  level:
+    org.springframework.ai.chat.client.advisor: DEBUG

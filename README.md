@@ -1,105 +1,98 @@
-# day02-prompt-output
+#### 긴 대화 자동 요약기 — 실행 안내
 
-Spring AI Day 2 — Prompt / Structured Output 실습 프로젝트.
-AI 응답을 String이 아니라 Java 타입으로 받는 방법을 익히기 위해
-`PromptTemplate`(입력)과 `.entity()`(출력) 두 가지를 중심으로 구성했다.
-
-## 무엇이 담겨 있나
-
-| 구분 | 목적 | 핵심 기술 |
-|---|---|---|
-| 준비물 목록 API | 단순 문자열 목록 응답 | `.entity(new ListOutputConverter(...))` |
-| 여행 준비물+일정 API | 위 세 방식의 응용, 중첩 record | `.entity(Class)` + `List<record>` 필드 |
-
-## 프로젝트 구조
+#### 1. 프로젝트 구조
 
 ```
-src/main/java/com/study/day02promptoutput/
-├── Day02PromptOutputApplication.java
-├── TravelController.java           # /api/travel, /api/travel/packing, /api/travel/itinerary
-├── TravelService.java              # 응용 프로젝트 — 여행 준비물+일정 추천기
-└── dto/
-    ├── DayPlan.java                # record(day, activities)
-    └── TravelPlanResponse.java     # record(packingList, itinerary, estimatedBudgetKrw, budgetNote) — 중첩 record
-
+build.gradle
 src/main/resources/
-├── application.yml                 # API Key는 환경변수로만 관리
-└── static/
-    └── index.html                  # 여행 추천기 프론트엔드
+  ├─ application.yml
+  └─ static/
+      └─ index.html                        (테스트용 채팅 화면)
+
+src/main/java/com/study/summarizingmemory/
+  ├─ SummarizingMemoryApplication.java      (메인 클래스)
+  ├─ ChatMemoryConfig.java                  (ChatMemory 빈 등록)
+  ├─ ConversationSummarizer.java            (요약 전담 LLM 호출)
+  ├─ SummarizingChatMemory.java             (핵심 - 요약형 ChatMemory 구현체)
+  ├─ SummaryChatService.java                (대화 서비스 + 메모리 조회/초기화)
+  ├─ AiController.java                      (REST 엔드포인트)
+  ├─ dto/
+  │   └─ MemoryMessageView.java             (메모리 상태 응답 DTO)
+  └─ advisor/
+      └─ CallCounterAdvisor.java            (호출 횟수 카운터)
 ```
 
-## 실행 방법
+패키지는 `dto`, `advisor` 두 개만 분리했고, 나머지 핵심 클래스(Config/Service/Controller/Memory)는 루트 패키지에 그대로 둔 상태입니다.
 
-1. 환경변수에 Gemini API Key 설정
-   ```
-   export GOOGLE_API_KEY=발급받은키
-   ```
-2. `./gradlew bootRun` 또는 IDE에서 `Day02PromptOutputApplication` 실행
-3. 브라우저에서 `http://localhost:8080` 접속 → 여행 추천기 웹 화면 확인
+#### 2. 시작 전에 확인할 것
 
-`index.html`을 `src/main/resources/static/`에 두면 Spring Boot가 정적 리소스로 서빙하기 때문에
-프론트엔드와 API가 같은 오리진에서 동작해 별도 CORS 설정이 필요 없다.
-파일을 다른 위치에서 직접 열어서 쓰는 경우, `TravelController`에 `@CrossOrigin`을 추가하거나
-화면의 "API 서버 주소 설정"에서 Base URL을 지정해야 한다.
+- `build.gradle`의 모델 starter를 실제 사용 중인 provider에 맞게 바꾸세요 (기본값: Gemini/google-genai)
+- `application.yml`의 `api-key` 값을 환경 변수로 채워주세요
+  ```bash
+  export GOOGLE_API_KEY=여기에_키
+  ```
 
-## 엔드포인트 목록
+#### 3. 실행
 
-| 메서드 | 경로 | 설명 | 응답 타입 |
-|---|---|---|---|
-| GET | `/api/packing?destination=&days=` | 준비물 목록 (분류기 버전) | `List<String>` |
-| GET | `/api/travel/packing?destination=&days=` | 준비물 목록 | `List<String>` |
-| GET | `/api/travel/itinerary?destination=&days=` | 일별 일정 | `List<DayPlan>` |
-| GET | `/api/travel?destination=&days=` | 준비물 + 일정 한 번에 | `TravelPlanResponse` |
+```bash
+./gradlew bootRun
+```
 
-## 응답 캡처
+브라우저에서 바로 테스트하려면:
+```
+http://localhost:8080/index.html
+```
 
-<!--
-아래 자리에 스크린샷을 넣으세요.
-1) 캡처 이미지를 프로젝트 폴더(예: docs/images/)에 저장
-2) 아래처럼 마크다운 이미지 문법으로 삽입
-   ![코드 설명 도우미 응답 예시](docs/images/code-explain.png)
--->
+#### 4. API 엔드포인트
 
-### 여행 준비물 · 일정 추천기
+| 메서드 | 경로 | 설명 |
+|---|---|---|
+| GET | `/api/chat-summary?question=...&conversationID=...` | 질문에 대한 응답 (요약형 메모리 적용) |
+| GET | `/api/chat-summary/history?conversationID=...` | 현재 저장소에 남아있는 메시지 목록 조회 (요약 메시지 포함) |
+| GET | `/api/chat-summary/clear?conversationID=...` | 해당 conversationID의 대화 기억 초기화 |
+| GET | `/api/call-count` | `CallCounterAdvisor` 누적 호출 횟수 조회 |
 
-![여행 준비물 · 일정 추천기 응답 예시](day02-prompt-output/docs/images/travel-plan-response-explain.png)
+#### 5. 화면 구성 (index.html)
 
-## 오늘 배운 것 요약
+- 왼쪽: 채팅창 — 질문을 입력하면 바로 응답을 확인
+- 오른쪽: "저장된 메모리 상태" — `ChatMemoryRepository`에 실제로 남아있는 메시지를 그대로 보여줌. `SYSTEM` 타입이면서 `[이전 대화 요약]`으로 시작하는 메시지는 주황색 `SUMMARY` 카드로 강조 표시
+- 상단: `conversationID` 변경/불러오기, 대화 초기화, `call-count` 실시간 표시
 
-**입력 — PromptTemplate**
-문자열을 이어 붙이지 않고, `{변수}` 자리를 가진 템플릿에 `.param()`으로 값을 바인딩한다.
-SQL의 `?` 바인딩과 같은 발상. 모든 호출에 공통인 규칙은 `defaultSystem()`에,
-특정 기능에만 해당하는 규칙은 해당 메서드의 user 템플릿에 둔다.
+#### 6. 테스트 시나리오 (핵심 증거 만들기)
 
-**출력 — 부탁에서 계약으로**
-자연어로 "JSON으로 답해줘"라고 하는 것은 부탁이다. 모델 응답은 확률적이라
-형식이 흔들리거나(`**priority**:` 같은 마크다운) 값 자체가 어긋날 수 있다(`"높음"` vs `"HIGH"`).
-`StructuredOutputConverter`(`.entity()`)를 쓰면 record의 필드에서 JSON 스키마를 만들어
-검증된 형식 지시문을 자동으로 삽입하고, 응답을 파싱해서 타입으로 돌려준다. 부탁을 계약으로 바꾸는 장치다.
+화면에서 같은 `conversationID`로 10턴 이상 대화를 이어가면서, 초반에 말한 내용을 한참 뒤에 다시 물어보면 요약이 잘 동작하는지 확인할 수 있습니다.
 
-**세 가지 받는 방법**
+브라우저 대신 curl로 확인하고 싶다면:
 
-| 받고 싶은 것 | 쓰는 것 |
-|---|---|
-| 객체 한 건 | `.entity(MyRecord.class)` |
-| 객체 여러 건 | `.entity(new ParameterizedTypeReference<List<T>>() {})` |
-| 문자열 목록 | `.entity(new ListOutputConverter(...))` |
+```bash
+CONV="summary-demo-01"
+BASE="http://localhost:8080/api/chat-summary"
 
-`TravelPlanResponse`처럼 record 안에 `List<record>`를 중첩하면, 이 세 가지 중
-"객체 한 건" 방식만으로도 준비물 목록과 일정 리스트를 한 번에 받아올 수 있다.
+curl -G "$BASE" --data-urlencode "question=내 이름은 지훈이야. 취미는 등산이고 요즘 사이드 프로젝트로 스프링 AI 공부 중이야." --data-urlencode "conversationID=$CONV"
+curl -G "$BASE" --data-urlencode "question=오늘 날씨 어때?" --data-urlencode "conversationID=$CONV"
+curl -G "$BASE" --data-urlencode "question=자바 17이랑 21 차이 알려줘." --data-urlencode "conversationID=$CONV"
+curl -G "$BASE" --data-urlencode "question=스프링 부트 3.4는 언제 나왔어?" --data-urlencode "conversationID=$CONV"
+curl -G "$BASE" --data-urlencode "question=REST API 설계 원칙 3가지만 알려줘." --data-urlencode "conversationID=$CONV"
+curl -G "$BASE" --data-urlencode "question=그럼 페이징은 어떻게 설계하는 게 좋을까?" --data-urlencode "conversationID=$CONV"
+curl -G "$BASE" --data-urlencode "question=좋아, 고마워." --data-urlencode "conversationID=$CONV"
 
-**그래도 100%는 아니다**
-`.entity()`도 내부는 "지시 + 파싱"이라서 모델이 스키마를 어기면 변환 예외가 날 수 있다.
-실무에서는 try-catch, 재시도, 폴백을 준비하고, 잘 안 바뀌어야 하는 값은
-프롬프트와 record 양쪽에 명시해두는 습관이 필요하다.
+# 여기서부터 요약이 트리거될 가능성이 높습니다
+curl -G "$BASE" --data-urlencode "question=내 이름이 뭐였지? 그리고 취미도 같이 말해줘." --data-urlencode "conversationID=$CONV"
 
-## 체크리스트
+# 저장소 상태 직접 확인
+curl -G "http://localhost:8080/api/chat-summary/history" --data-urlencode "conversationID=$CONV"
+```
 
-- [x] 응용 — 여행 준비물 + 일정 추천기 (`TravelPlanResponse`, 중첩 record)
-- [x] 심화 — `estimatedBudgetKrw`, `budgetNote` 필드 추가 (record 확장 → 스키마 자동 확장 체감)
-- [x] 프론트엔드 — `index.html`로 세 엔드포인트 테스트 가능한 화면 구성
+마지막 질문에서 이름(지훈)과 취미(등산)를 정확히 답하면 성공입니다 — 원본 메시지는 이미 삭제됐어도, 요약을 통해 여전히 기억하고 있다는 뜻이니까요.
 
-## 다음 (Day3) 미해결 질문
+#### 7. 관찰 포인트
 
-- 로깅·공통 규칙을 모든 호출에 끼우려면? → **Advisor**, `.call()` 앞뒤에 개입하는 인터셉터
-- 모델은 직전 대화를 기억하지 못한다 → **Chat Memory**, 애플리케이션이 맥락을 넣어주는 구조
+- `logging.level.com.study.summarizingmemory: DEBUG` 설정 덕분에, 콘솔에서 몇 번째 호출에서 요약이 발생하는지 확인 가능
+- `/api/call-count`로 호출 횟수를 확인하면, 질문 1번당 실제로는 **본 응답 1번 + (요약 트리거 시) 요약 호출 1번**, 총 2번의 LLM 호출이 발생할 수 있다는 점을 관찰할 수 있습니다
+- `index.html`의 오른쪽 패널이 사실상 `chatMemory.get(conversationID)`를 그대로 시각화한 것이라, DB 파일을 직접 열어보지 않아도 저장 상태를 눈으로 확인할 수 있습니다
+
+#### 8. 알려진 한계 / 트러블슈팅 기록
+
+- **[해결됨] 요약 트리거 직후 500 에러** — 처음엔 요약을 `SystemMessage`로 저장했는데, Gemini(Google GenAI) API는 대화 turn(contents)에 system 역할이 섞여 들어오는 걸 허용하지 않아서(system은 오직 `systemInstruction` 필드로만 받음) 요약이 생긴 다음 질문부터 계속 500 에러가 났습니다. → `SystemMessage` 대신 `UserMessage`로 저장하도록 `SummarizingChatMemory`를 수정해서 해결했습니다. 요약 판별 조건(`isSummaryMessage`)과 프론트(`index.html`)의 SUMMARY 카드 판별 조건도 함께 `USER` 타입 기준으로 맞췄습니다.
+- 오래된 메시지를 자르는 `cutIndex`가 홀수면 user/assistant 페어가 어긋날 수 있어서, 짝수로 내림 처리하는 보정을 추가했습니다.
+- 요약도 LLM 호출이기 때문에 대화가 길어질수록 비용/지연 시간이 늘어납니다. 실무라면 요약 주기를 더 길게 잡거나 더 저렴한 모델로 요약만 따로 돌리는 것도 고려해볼 만합니다.
