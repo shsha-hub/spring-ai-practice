@@ -13,9 +13,7 @@ Spring AI Day 3 — Advisor / Memory 실습 프로젝트.
 
 ## 프로젝트 구조
 
-
 ```
-
 src/main/java/com/study/day03advisormemory/
 ├── SummarizingMemoryApplication.java   # 메인 클래스
 ├── ChatMemoryConfig.java               # ChatMemory 빈 등록 및 설정
@@ -32,7 +30,6 @@ src/main/resources/
 ├── application.yml                     # 로깅 및 API Key 환경변수 관리
 └── static/
 └── index.html                      # 실시간 메모리 모니터링이 가능한 채팅 UI
-
 ```
 
 ## 실행 방법
@@ -41,7 +38,6 @@ src/main/resources/
    ```bash
    export GOOGLE_API_KEY=발급받은키
     ```
-
 
 2. `./gradlew bootRun` 또는 IDE에서 `SummarizingMemoryApplication` 실행
 3. 브라우저에서 `http://localhost:8080/index.html` 접속 → 채팅 및 실시간 메모리 상태 확인
@@ -96,4 +92,3 @@ LLM은 본질적으로 직전 대화를 기억하지 못하는 무상태(Statele
 * **구조적 정렬:** 기존에 줄글과 나열식으로 되어 있던 '알려진 한계 / 트러블슈팅' 내용과 '관찰 포인트'를 제공해주신 양식의 **[오늘 배운 것 요약]** 항목으로 자연스럽게 녹여냈습니다.
 * **비교 테이블 활용:** 무엇이 담겨 있나 파트에 핵심 기술을 표로 깔끔하게 정리했습니다.
 * **다음 미해결 질문 연결:** Day 2 문서의 마지막 부분처럼, Day 3(Memory/Advisor)에서 자연스럽게 Day 4(RAG, Embedding) 주제로 넘어갈 수 있도록 빌드업하는 질문을 하단에 추가했습니다.
-
