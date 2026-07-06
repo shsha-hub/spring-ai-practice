@@ -1,98 +1,99 @@
-#### 긴 대화 자동 요약기 — 실행 안내
+# day03-advisor-memory
 
-#### 1. 프로젝트 구조
+Spring AI Day 3 — Advisor / Memory 실습 프로젝트.
+대화의 맥락을 유지하기 위한 `ChatMemory`와 호출 흐름에 개입하는 `Advisor`를 학습하고, 
+긴 대화 시 컨텍스트 오버플로우를 방지하는 **'요약형 메모리 체계'**를 구현했다.
 
-```
-build.gradle
-src/main/resources/
-  ├─ application.yml
-  └─ static/
-      └─ index.html                        (테스트용 채팅 화면)
+## 무엇이 담겨 있나
 
-src/main/java/com/study/summarizingmemory/
-  ├─ SummarizingMemoryApplication.java      (메인 클래스)
-  ├─ ChatMemoryConfig.java                  (ChatMemory 빈 등록)
-  ├─ ConversationSummarizer.java            (요약 전담 LLM 호출)
-  ├─ SummarizingChatMemory.java             (핵심 - 요약형 ChatMemory 구현체)
-  ├─ SummaryChatService.java                (대화 서비스 + 메모리 조회/초기화)
-  ├─ AiController.java                      (REST 엔드포인트)
-  ├─ dto/
-  │   └─ MemoryMessageView.java             (메모리 상태 응답 DTO)
-  └─ advisor/
-      └─ CallCounterAdvisor.java            (호출 횟수 카운터)
-```
-
-패키지는 `dto`, `advisor` 두 개만 분리했고, 나머지 핵심 클래스(Config/Service/Controller/Memory)는 루트 패키지에 그대로 둔 상태입니다.
-
-#### 2. 시작 전에 확인할 것
-
-- `build.gradle`의 모델 starter를 실제 사용 중인 provider에 맞게 바꾸세요 (기본값: Gemini/google-genai)
-- `application.yml`의 `api-key` 값을 환경 변수로 채워주세요
-  ```bash
-  export GOOGLE_API_KEY=여기에_키
-  ```
-
-#### 3. 실행
-
-```bash
-./gradlew bootRun
-```
-
-브라우저에서 바로 테스트하려면:
-```
-http://localhost:8080/index.html
-```
-
-#### 4. API 엔드포인트
-
-| 메서드 | 경로 | 설명 |
+| 구분 | 목적 | 핵심 기술 |
 |---|---|---|
-| GET | `/api/chat-summary?question=...&conversationID=...` | 질문에 대한 응답 (요약형 메모리 적용) |
-| GET | `/api/chat-summary/history?conversationID=...` | 현재 저장소에 남아있는 메시지 목록 조회 (요약 메시지 포함) |
-| GET | `/api/chat-summary/clear?conversationID=...` | 해당 conversationID의 대화 기억 초기화 |
-| GET | `/api/call-count` | `CallCounterAdvisor` 누적 호출 횟수 조회 |
+| 자동 요약 메모리 | 대화가 길어지면 이전 대화를 요약본 하나로 압축 | `ChatMemory`, `ConversationSummarizer` |
+| 인터셉터 기능 | LLM 호출 횟수 및 동작을 전역적으로 감시/기록 | `CallCounterAdvisor`, `AroundAdvisor` |
 
-#### 5. 화면 구성 (index.html)
+## 프로젝트 구조
 
-- 왼쪽: 채팅창 — 질문을 입력하면 바로 응답을 확인
-- 오른쪽: "저장된 메모리 상태" — `ChatMemoryRepository`에 실제로 남아있는 메시지를 그대로 보여줌. `SYSTEM` 타입이면서 `[이전 대화 요약]`으로 시작하는 메시지는 주황색 `SUMMARY` 카드로 강조 표시
-- 상단: `conversationID` 변경/불러오기, 대화 초기화, `call-count` 실시간 표시
 
-#### 6. 테스트 시나리오 (핵심 증거 만들기)
-
-화면에서 같은 `conversationID`로 10턴 이상 대화를 이어가면서, 초반에 말한 내용을 한참 뒤에 다시 물어보면 요약이 잘 동작하는지 확인할 수 있습니다.
-
-브라우저 대신 curl로 확인하고 싶다면:
-
-```bash
-CONV="summary-demo-01"
-BASE="http://localhost:8080/api/chat-summary"
-
-curl -G "$BASE" --data-urlencode "question=내 이름은 지훈이야. 취미는 등산이고 요즘 사이드 프로젝트로 스프링 AI 공부 중이야." --data-urlencode "conversationID=$CONV"
-curl -G "$BASE" --data-urlencode "question=오늘 날씨 어때?" --data-urlencode "conversationID=$CONV"
-curl -G "$BASE" --data-urlencode "question=자바 17이랑 21 차이 알려줘." --data-urlencode "conversationID=$CONV"
-curl -G "$BASE" --data-urlencode "question=스프링 부트 3.4는 언제 나왔어?" --data-urlencode "conversationID=$CONV"
-curl -G "$BASE" --data-urlencode "question=REST API 설계 원칙 3가지만 알려줘." --data-urlencode "conversationID=$CONV"
-curl -G "$BASE" --data-urlencode "question=그럼 페이징은 어떻게 설계하는 게 좋을까?" --data-urlencode "conversationID=$CONV"
-curl -G "$BASE" --data-urlencode "question=좋아, 고마워." --data-urlencode "conversationID=$CONV"
-
-# 여기서부터 요약이 트리거될 가능성이 높습니다
-curl -G "$BASE" --data-urlencode "question=내 이름이 뭐였지? 그리고 취미도 같이 말해줘." --data-urlencode "conversationID=$CONV"
-
-# 저장소 상태 직접 확인
-curl -G "http://localhost:8080/api/chat-summary/history" --data-urlencode "conversationID=$CONV"
 ```
 
-마지막 질문에서 이름(지훈)과 취미(등산)를 정확히 답하면 성공입니다 — 원본 메시지는 이미 삭제됐어도, 요약을 통해 여전히 기억하고 있다는 뜻이니까요.
+src/main/java/com/study/day03advisormemory/
+├── SummarizingMemoryApplication.java   # 메인 클래스
+├── ChatMemoryConfig.java               # ChatMemory 빈 등록 및 설정
+├── ConversationSummarizer.java         # 요약 전담 LLM 호출 컴포넌트
+├── SummarizingChatMemory.java          # 핵심 — 요약형 ChatMemory 구현체
+├── SummaryChatService.java             # 대화 서비스 (메모리 조회/초기화 캡슐화)
+├── AiController.java                  # REST 엔드포인트 (/api/chat-summary, /api/call-count)
+├── advisor/
+│   └── CallCounterAdvisor.java         # 호출 횟수 카운터 Advisor
+└── dto/
+└── MemoryMessageView.java          # 메모리 상태 시각화용 응답 DTO
 
-#### 7. 관찰 포인트
+src/main/resources/
+├── application.yml                     # 로깅 및 API Key 환경변수 관리
+└── static/
+└── index.html                      # 실시간 메모리 모니터링이 가능한 채팅 UI
 
-- `logging.level.com.study.summarizingmemory: DEBUG` 설정 덕분에, 콘솔에서 몇 번째 호출에서 요약이 발생하는지 확인 가능
-- `/api/call-count`로 호출 횟수를 확인하면, 질문 1번당 실제로는 **본 응답 1번 + (요약 트리거 시) 요약 호출 1번**, 총 2번의 LLM 호출이 발생할 수 있다는 점을 관찰할 수 있습니다
-- `index.html`의 오른쪽 패널이 사실상 `chatMemory.get(conversationID)`를 그대로 시각화한 것이라, DB 파일을 직접 열어보지 않아도 저장 상태를 눈으로 확인할 수 있습니다
+```
 
-#### 8. 알려진 한계 / 트러블슈팅 기록
+## 실행 방법
 
-- **[해결됨] 요약 트리거 직후 500 에러** — 처음엔 요약을 `SystemMessage`로 저장했는데, Gemini(Google GenAI) API는 대화 turn(contents)에 system 역할이 섞여 들어오는 걸 허용하지 않아서(system은 오직 `systemInstruction` 필드로만 받음) 요약이 생긴 다음 질문부터 계속 500 에러가 났습니다. → `SystemMessage` 대신 `UserMessage`로 저장하도록 `SummarizingChatMemory`를 수정해서 해결했습니다. 요약 판별 조건(`isSummaryMessage`)과 프론트(`index.html`)의 SUMMARY 카드 판별 조건도 함께 `USER` 타입 기준으로 맞췄습니다.
-- 오래된 메시지를 자르는 `cutIndex`가 홀수면 user/assistant 페어가 어긋날 수 있어서, 짝수로 내림 처리하는 보정을 추가했습니다.
-- 요약도 LLM 호출이기 때문에 대화가 길어질수록 비용/지연 시간이 늘어납니다. 실무라면 요약 주기를 더 길게 잡거나 더 저렴한 모델로 요약만 따로 돌리는 것도 고려해볼 만합니다.
+1. 환경변수에 Gemini API Key 설정
+   ```bash
+   export GOOGLE_API_KEY=발급받은키
+    ```
+
+
+2. `./gradlew bootRun` 또는 IDE에서 `SummarizingMemoryApplication` 실행
+3. 브라우저에서 `http://localhost:8080/index.html` 접속 → 채팅 및 실시간 메모리 상태 확인
+
+`index.html` 화면 우측 패널에서 `chatMemory.get(conversationID)`의 저장 상태를 실시간으로 시각화하여, DB나 세션을 뜯어보지 않고도 메모리 압축 과정을 눈으로 파악할 수 있다.
+
+## 엔드포인트 목록
+
+| 메서드 | 경로 | 설명 | 응답 타입 |
+| --- | --- | --- | --- |
+| GET | `/api/chat-summary?question=&conversationID=` | 요약형 메모리가 적용된 챗봇 질의 | `String` |
+| GET | `/api/chat-summary/history?conversationID=` | 현재 메모리에 남아있는 메시지 목록 조회 | `List<MemoryMessageView>` |
+| GET | `/api/chat-summary/clear?conversationID=` | 특정 세션의 대화 기억 초기화 | `String` |
+| GET | `/api/call-count` | `CallCounterAdvisor`에 누적된 LLM 호출 횟수 | `Long` |
+
+## 응답 캡처
+
+### 긴 대화 자동 요약 챗봇
+
+![여행 준비물 · 일정 추천기 응답 예시](day03-advisor-memory/docs/images/summarize-chat-explain.png)
+
+## 오늘 배운 것 요약
+
+**맥락 유지 — ChatMemory**
+LLM은 본질적으로 직전 대화를 기억하지 못하는 무상태(Stateless) 구조다. 개발자가 이전 대화 내역(`History`)을 매 요청마다 프롬프트에 쑤셔 넣어주어야 비로소 '기억하는 척'을 한다. Spring AI는 이 역할을 `ChatMemory` 추상화 인터페이스와 `Advisor`를 통해 우아하게 자동화한다.
+
+**긴 대화의 딜레마와 요약(Summarization)**
+대화가 무한히 길어지면 컨텍스트 토큰 제한(Token Limit)을 초과하거나 비용이 폭발한다. 이를 해결하기 위해 일정 턴(Turn) 이상 지나간 과거 대화는 삭제하되, 삭제하기 전 핵심 내용을 **또 다른 LLM 호출을 통해 하나의 '요약본 메시지'로 압축**하여 메모리 최상단에 고정하는 전략을 구현했다.
+
+**트러블슈팅 기록: 모델 특성 파악의 중요성**
+
+* **Gemini의 500 에러 사건:** 요약본을 대화 내역에 `SystemMessage`로 끼워 넣었더니 Gemini API에서 500 에러를 뱉었다. Gemini는 대화 턴(`contents`) 도중에 `system` 역할이 섞이는 것을 허용하지 않고, 오직 최상위 `systemInstruction`으로만 시스템 메시지를 받기 때문이었다.
+* **해결책:** 요약 메시지를 `UserMessage` 타입으로 위장하여 저장하고, 프런트엔드와 백엔드에서 특정 접두어(`[이전 대화 요약]`)로 판별하도록 우회 수정하여 해결했다.
+* **데이터 페어 정합성:** 과거 대화를 잘라낼 때(`cutIndex`) 홀수 개로 자르면 유저와 AI의 대화 쌍(Pair)이 깨질 수 있으므로, 항상 짝수로 내림 보정하는 디테일이 필요하다.
+
+**비용과 지연 시간의 트레이드오프**
+질문 1번당 **[본 응답 호출 1번 + 요약 트리거 시 요약 호출 1번]** 구조로 최대 2번의 LLM 호출이 일어난다. 실무에서는 요약 주기를 넉넉히 잡거나, 요약 전담에는 비용이 저렴하고 빠른 경량 모델(예: Flash 계열)을 별도로 매핑하는 전략이 유리하다.
+
+## 체크리스트
+
+* [x] 구현 — 일정 턴 이상 대화 시 자동으로 과거 내역을 압축하는 `SummarizingChatMemory`
+* [x] 해결 — Gemini API 스펙에 맞춘 요약 메시지 `UserMessage` 우회 처리 및 페어 보정
+* [x] 모니터링 — `AroundAdvisor` 기반의 `CallCounterAdvisor`로 전역 LLM 호출 횟수 추적
+* [x] 시각화 — 메모리에 남은 실제 메시지와 `SUMMARY` 카드를 주황색으로 강조하는 모니터링 화면 구성
+
+## 다음 (Day 4) 미해결 질문
+
+* 사용자가 준 도큐먼트(PDF, TXT) 내용을 기반으로 똑똑하게 답변하게 만드려면? → **RAG (Retrieval-Augmented Generation)**
+* 텍스트 데이터를 LLM이 이해할 수 있는 숫자로 바꾸고 저장하는 방법은? → **Embedding** & **Vector Database**
+
+### 주요 변경 및 보완 포인트
+* **구조적 정렬:** 기존에 줄글과 나열식으로 되어 있던 '알려진 한계 / 트러블슈팅' 내용과 '관찰 포인트'를 제공해주신 양식의 **[오늘 배운 것 요약]** 항목으로 자연스럽게 녹여냈습니다.
+* **비교 테이블 활용:** 무엇이 담겨 있나 파트에 핵심 기술을 표로 깔끔하게 정리했습니다.
+* **다음 미해결 질문 연결:** Day 2 문서의 마지막 부분처럼, Day 3(Memory/Advisor)에서 자연스럽게 Day 4(RAG, Embedding) 주제로 넘어갈 수 있도록 빌드업하는 질문을 하단에 추가했습니다.
+
