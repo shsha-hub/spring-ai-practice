@@ -62,6 +62,9 @@ public class SpeechGenerationService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
                         "응답에 오디오 데이터가 없습니다."));
 
-        return WavAudio.pcmToWav(pcm, SAMPLE_RATE, CHANNELS, BITS_PER_SAMPLE);
+        return WavAudio.pcmToWav(pcm,
+                SAMPLE_RATE,
+                CHANNELS,
+                BITS_PER_SAMPLE);
     }
 }

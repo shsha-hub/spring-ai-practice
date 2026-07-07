@@ -32,4 +32,5 @@ public class GenAiClientConfig {
     public Client client() {
         return client;
     }
+
 }

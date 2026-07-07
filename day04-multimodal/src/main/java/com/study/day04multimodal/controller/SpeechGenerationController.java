@@ -36,4 +36,5 @@ public class SpeechGenerationController {
 
         return new SpeechGenerationResponse(Base64.getEncoder().encodeToString(wav));
     }
+
 }

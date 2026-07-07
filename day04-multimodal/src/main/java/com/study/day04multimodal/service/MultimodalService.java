@@ -54,6 +54,7 @@ public class MultimodalService {
         if (question == null || question.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "질문 내용을 입력해주세요.");
         }
+
         return chatClient.prompt()
                 .user(question)
                 .advisors(spec -> spec.param(ChatMemory.CONVERSATION_ID, conversationId))
@@ -87,4 +88,5 @@ public class MultimodalService {
                     category.label() + "만 지원합니다. 받은 타입 : " + contentType);
         }
     }
+
 }

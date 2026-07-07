@@ -30,4 +30,5 @@ public enum MediaCategory {
     public String label() {
         return label;
     }
+
 }
