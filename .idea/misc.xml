@@ -3,6 +3,7 @@
   <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="FrameworkDetectionExcludesConfiguration">
     <file type="web" url="file://$PROJECT_DIR$/day03-advisor-memory" />
+    <file type="web" url="file://$PROJECT_DIR$/day04-multimodal" />
   </component>
   <component name="KubernetesApiProvider"><![CDATA[{}]]></component>
   <component name="ProjectRootManager" version="2" project-jdk-name="temurin-21" project-jdk-type="JavaSDK">

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>회의록 올인원 비서</title>
+<style>
+  :root {
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --bg: #f8fafc;
+    --image: #3b82f6;
+    --image-soft: #dbeafe;
+    --pdf: #f59e0b;
+    --pdf-soft: #fef3c7;
+    --text: #22c55e;
+    --text-soft: #dcfce7;
+    --ask: #6366f1;
+    --ask-soft: #eef2ff;
+    --danger: #ef4444;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    line-height: 1.5;
+  }
+
+  header {
+    padding: 40px 24px 24px;
+    text-align: center;
+  }
+
+  header h1 {
+    margin: 0 0 8px;
+    font-size: 26px;
+    letter-spacing: -0.02em;
+  }
+
+  header p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  main {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 24px 64px;
+    display: grid;
+    gap: 20px;
+  }
+
+  .conv-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 13px;
+  }
+
+  .conv-bar input {
+    flex: 1;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+
+  .conv-bar .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text);
+    flex-shrink: 0;
+  }
+
+  .card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 22px;
+    border-left: 4px solid var(--line);
+  }
+
+  .card.image { border-left-color: var(--image); }
+  .card.pdf { border-left-color: var(--pdf); }
+  .card.text { border-left-color: var(--text); }
+  .card.ask { border-left-color: var(--ask); }
+
+  .card h2 {
+    margin: 0 0 4px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .tag {
+    font-size: 10px;
+    font-weight: 700;
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 5px;
+    letter-spacing: 0.03em;
+  }
+
+  .tag.image { background: var(--image); }
+  .tag.pdf { background: var(--pdf); }
+  .tag.text { background: var(--text); }
+  .tag.ask { background: var(--ask); }
+
+  .card p.desc {
+    margin: 0 0 16px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  input[type="file"] {
+    font-size: 13px;
+    flex: 1;
+    min-width: 180px;
+  }
+
+  input[type="text"], textarea {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    flex: 1;
+    min-width: 180px;
+  }
+
+  textarea { resize: vertical; min-height: 44px; }
+
+  button {
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--ink);
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.15s;
+  }
+
+  button:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .card.image button { background: var(--image); }
+  .card.pdf button { background: var(--pdf); }
+  .card.text button { background: var(--text); }
+  .card.ask button { background: var(--ask); }
+
+  .result {
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: var(--bg);
+    border-radius: 8px;
+    font-size: 13px;
+    white-space: pre-wrap;
+    display: none;
+  }
+
+  .result.show { display: block; }
+  .result.error { background: #fef2f2; color: var(--danger); }
+
+  .result .k { color: var(--muted); font-size: 11px; margin-top: 8px; }
+  .result .k:first-child { margin-top: 0; }
+  .result .v { font-weight: 600; }
+
+  .spinner {
+    display: none;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .spinner.show { display: inline-block; }
+
+  select {
+    font-family: inherit;
+    font-size: 13px;
+    padding: 9px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+  }
+
+  audio { width: 100%; margin-top: 10px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🗂️ 회의록 올인원 비서</h1>
+  <p>화이트보드 사진 · 안건 PDF · 회의 녹음을 던지고, 나중에 다 기억하는지 물어보세요</p>
+</header>
+
+<main>
+
+  <div class="conv-bar">
+    <span class="dot"></span>
+    <span>대화방 ID</span>
+    <input type="text" id="conversationId" value="meeting-001">
+    <span style="color: var(--muted);">같은 ID로 보내야 Chat Memory가 이어집니다</span>
+  </div>
+
+  <!-- 1. 화이트보드 -->
+  <div class="card image">
+    <h2><span class="tag image">IMAGE</span> 화이트보드 사진</h2>
+    <p class="desc">회의 중 찍은 화이트보드 사진에서 주제와 액션 아이템을 뽑아냅니다.</p>
+    <div class="row">
+      <input type="file" id="boardFile" accept="image/jpeg,image/png">
+      <button onclick="submitBoard()">분석하기</button>
+      <span class="spinner" id="boardSpinner">분석 중...</span>
+    </div>
+    <div class="result" id="boardResult"></div>
+  </div>
+
+  <!-- 2. 안건 PDF -->
+  <div class="card pdf">
+    <h2><span class="tag pdf">PDF</span> 안건 PDF</h2>
+    <p class="desc">회의 전 공유된 안건 문서를 한 문단으로 요약합니다.</p>
+    <div class="row">
+      <input type="file" id="agendaFile" accept="application/pdf">
+      <button onclick="submitAgenda()">요약하기</button>
+      <span class="spinner" id="agendaSpinner">요약 중...</span>
+    </div>
+    <div class="result" id="agendaResult"></div>
+  </div>
+
+  <!-- 3. 회의 녹음 -->
+  <div class="card text">
+    <h2><span class="tag text">AUDIO</span> 회의 녹음</h2>
+    <p class="desc">녹음 파일 속 핵심 발언과 결정 사항을 정리합니다 (WAV/MP3).</p>
+    <div class="row">
+      <input type="file" id="audioFile" accept="audio/wav,audio/mpeg">
+      <button onclick="submitAudio()">정리하기</button>
+      <span class="spinner" id="audioSpinner">듣는 중...</span>
+    </div>
+    <div class="result" id="audioResult"></div>
+  </div>
+
+  <!-- 4. 후속 질문 -->
+  <div class="card ask">
+    <h2><span class="tag ask">ASK</span> 후속 질문</h2>
+    <p class="desc">위 세 가지 중 아무 내용이나 물어보세요. 크로스 모달로 기억하고 있는지 확인하는 부분입니다.</p>
+    <div class="row">
+      <textarea id="question" placeholder="예: 액션 아이템 중에 내가 담당인 게 뭐였지?"></textarea>
+      <button onclick="submitAsk()">질문하기</button>
+      <span class="spinner" id="askSpinner">생각 중...</span>
+    </div>
+    <div class="result" id="askResult"></div>
+
+    <div class="row" style="margin-top: 16px; border-top: 1px solid var(--line); padding-top: 16px;">
+      <select id="voiceName">
+        <option value="Kore">Kore</option>
+        <option value="Puck">Puck</option>
+      </select>
+      <button onclick="speakLastAnswer()" style="background: var(--ink);">답변 음성으로 듣기</button>
+      <span class="spinner" id="speakSpinner">합성 중...</span>
+    </div>
+    <audio id="audioPlayer" controls style="display:none;"></audio>
+  </div>
+
+</main>
+
+<script>
+let lastAnswer = "";
+
+function conversationId() {
+  return document.getElementById('conversationId').value.trim() || 'meeting-001';
+}
+
+function showResult(elId, content, isError = false) {
+  const el = document.getElementById(elId);
+  el.className = 'result show' + (isError ? ' error' : '');
+  el.textContent = content;
+}
+
+function toggleSpinner(id, show) {
+  document.getElementById(id).classList.toggle('show', show);
+}
+
+async function postMultipart(url, formData) {
+  const res = await fetch(url, { method: 'POST', body: formData });
+  const text = await res.text();
+  if (!res.ok) {
+    let message = text;
+    try { message = JSON.parse(text).error || JSON.parse(text).message || text; } catch (e) {}
+    throw new Error(message || `요청 실패 (${res.status})`);
+  }
+  try { return JSON.parse(text); } catch (e) { return text; }
+}
+
+async function submitBoard() {
+  const file = document.getElementById('boardFile').files[0];
+  if (!file) return showResult('boardResult', '파일을 선택해주세요.', true);
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('conversationId', conversationId());
+
+  toggleSpinner('boardSpinner', true);
+  try {
+    const data = await postMultipart('/api/meeting/board', fd);
+    showResult('boardResult',
+      `[주제]\n${(data.topics || []).map(t => '- ' + t).join('\n')}\n\n[액션 아이템]\n${(data.actionItems || []).map(a => '- ' + a).join('\n')}`);
+  } catch (e) {
+    showResult('boardResult', e.message, true);
+  } finally {
+    toggleSpinner('boardSpinner', false);
+  }
+}
+
+async function submitAgenda() {
+  const file = document.getElementById('agendaFile').files[0];
+  if (!file) return showResult('agendaResult', '파일을 선택해주세요.', true);
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('conversationId', conversationId());
+
+  toggleSpinner('agendaSpinner', true);
+  try {
+    const data = await postMultipart('/api/meeting/agenda', fd);
+    showResult('agendaResult', data.mainPoints || JSON.stringify(data));
+  } catch (e) {
+    showResult('agendaResult', e.message, true);
+  } finally {
+    toggleSpinner('agendaSpinner', false);
+  }
+}
+
+async function submitAudio() {
+  const file = document.getElementById('audioFile').files[0];
+  if (!file) return showResult('audioResult', '파일을 선택해주세요.', true);
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('conversationId', conversationId());
+
+  toggleSpinner('audioSpinner', true);
+  try {
+    const data = await postMultipart('/api/meeting/audio', fd);
+    showResult('audioResult', typeof data === 'string' ? data : JSON.stringify(data));
+  } catch (e) {
+    showResult('audioResult', e.message, true);
+  } finally {
+    toggleSpinner('audioSpinner', false);
+  }
+}
+
+async function submitAsk() {
+  const question = document.getElementById('question').value.trim();
+  if (!question) return showResult('askResult', '질문을 입력해주세요.', true);
+
+  const fd = new FormData();
+  fd.append('question', question);
+  fd.append('conversationId', conversationId());
+
+  toggleSpinner('askSpinner', true);
+  try {
+    const data = await postMultipart('/api/meeting/ask', fd);
+    const answer = typeof data === 'string' ? data : JSON.stringify(data);
+    lastAnswer = answer;
+    showResult('askResult', answer);
+  } catch (e) {
+    showResult('askResult', e.message, true);
+  } finally {
+    toggleSpinner('askSpinner', false);
+  }
+}
+
+async function speakLastAnswer() {
+  const text = lastAnswer || document.getElementById('askResult').textContent;
+  if (!text) return showResult('askResult', '먼저 질문을 해서 답변을 받아주세요.', true);
+
+  const voiceName = document.getElementById('voiceName').value;
+  toggleSpinner('speakSpinner', true);
+  try {
+    const res = await fetch('/api/speech-generation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voiceName })
+    });
+    if (!res.ok) throw new Error(`음성 합성 실패 (${res.status})`);
+    const data = await res.json();
+    const player = document.getElementById('audioPlayer');
+    player.src = 'data:audio/wav;base64,' + data.audioBase64;
+    player.style.display = 'block';
+    player.play();
+  } catch (e) {
+    showResult('askResult', e.message, true);
+  } finally {
+    toggleSpinner('speakSpinner', false);
+  }
+}
+</script>
+
+</body>
+</html>

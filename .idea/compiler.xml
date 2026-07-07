@@ -11,6 +11,9 @@
       <module name="day03-advisor-memory" options="-parameters" />
       <module name="day03-advisor-memory.main" options="-parameters" />
       <module name="day03-advisor-memory.test" options="-parameters" />
+      <module name="day04-multimodal" options="-parameters" />
+      <module name="day04-multimodal.main" options="-parameters" />
+      <module name="day04-multimodal.test" options="-parameters" />
     </option>
   </component>
 </project>
