@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: day05-tool-mcp
+  ai:
+    mcp:
+      client:
+        request-timeout: 30s
+        stdio:
+          connections:
+            filesystem:
+              command: npx.cmd
+              args:
+                - "-y"
+                - "@modelcontextprotocol/server-filesystem"
+                - "${user.dir}/mcp-sandbox"
+            fetch:
+              command: uvx
+              args:
+                - "mcp-server-fetch"
+            sequential-thinking:
+              command: npx.cmd
+              args:
+                - "-y"
+                - "@modelcontextprotocol/server-sequential-thinking"
+    google:
+      genai:
+        chat:
+          model: gemini-3.1-flash-lite
+        api-key: ${GOOGLE_API_KEY}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  web:
+    error:
+      include-message: always
+
+logging:
+  level:
+    org.springframework.ai.chat.client.advisor: DEBUG
